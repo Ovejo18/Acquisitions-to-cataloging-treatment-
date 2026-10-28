@@ -1,0 +1,1016 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!----><title>NYU Resource Lifecycle</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  --bg: #08111f;
+  --surface: #0f172a;
+  --surface-2: #111827;
+  --surface-3: #0d1525;
+  --border: #1e293b;
+  --border-2: #334155;
+  --fg: #f1f5f9;
+  --fg-2: #94a3b8;
+  --fg-3: #64748b;
+  --cyan: #22d3ee;
+  --cyan-dim: #0891b2;
+  --purple: #8b5cf6;
+  --green: #4ade80;
+  --amber: #fbbf24;
+  --red: #f87171;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { background: var(--bg); color: var(--fg); }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  padding: 24px max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px;
+}
+
+/* ── Header ── */
+.header { text-align: center; margin-bottom: 20px; }
+.header h1 { font-size: clamp(1.4rem, 3.5vw, 2rem); font-weight: 700; letter-spacing: -0.02em; }
+.header p { color: var(--fg-2); margin-top: 6px; font-size: 0.875rem; max-width: 60ch; margin-inline: auto; line-height: 1.6; }
+
+/* ── Hub ── */
+.hub { display: flex; justify-content: center; margin-bottom: 20px; }
+.hub-center {
+  background: linear-gradient(135deg, var(--cyan-dim), var(--purple));
+  padding: 14px 28px; border-radius: 999px;
+  font-weight: 700; font-size: 1rem; letter-spacing: 0.01em;
+}
+
+/* ── Wizard launch bar ── */
+.wizard-bar {
+  max-width: 1100px; margin: 0 auto 24px;
+  background: linear-gradient(135deg, rgba(34,211,238,0.08), rgba(139,92,246,0.08));
+  border: 1px solid rgba(34,211,238,0.25);
+  border-radius: 14px; padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px;
+}
+.wizard-bar-text { }
+.wizard-bar-title { font-weight: 700; font-size: 0.95rem; color: var(--fg); margin-bottom: 3px; }
+.wizard-bar-sub { font-size: 0.8rem; color: var(--fg-2); }
+.wizard-launch-btn {
+  background: var(--cyan); color: #08111f; border: none; border-radius: 8px;
+  padding: 10px 20px; font-weight: 700; font-size: 0.875rem;
+  cursor: pointer; font-family: inherit; transition: opacity 0.15s; white-space: nowrap;
+}
+.wizard-launch-btn:hover { opacity: 0.85; }
+
+/* ── Wizard overlay ── */
+.wizard-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(8,17,31,0.85); z-index: 100;
+  align-items: center; justify-content: center;
+  padding: 16px;
+}
+.wizard-overlay.visible { display: flex; }
+
+.wizard-panel {
+  background: var(--surface); border: 1px solid var(--border-2);
+  border-radius: 20px; width: 100%; max-width: 560px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+}
+
+/* Wizard header */
+.wiz-header {
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: var(--surface); z-index: 2;
+  border-radius: 20px 20px 0 0;
+}
+.wiz-header-left {}
+.wiz-title { font-weight: 700; font-size: 1rem; }
+.wiz-subtitle { font-size: 0.78rem; color: var(--fg-3); margin-top: 2px; }
+.wiz-close {
+  background: var(--border); border: none; color: var(--fg-2);
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center;
+  font-family: inherit; flex-shrink: 0;
+}
+.wiz-close:hover { background: var(--border-2); color: var(--fg); }
+
+/* Progress bar */
+.wiz-progress { padding: 12px 22px; border-bottom: 1px solid var(--border); }
+.wiz-progress-bar { height: 4px; background: var(--border-2); border-radius: 2px; overflow: hidden; }
+.wiz-progress-fill { height: 100%; background: var(--cyan); border-radius: 2px; transition: width 0.3s; }
+.wiz-progress-label { font-size: 10.5px; color: var(--fg-3); margin-top: 6px; letter-spacing: 0.04em; }
+
+/* Steps */
+.wiz-step { display: none; padding: 20px 22px; }
+.wiz-step.active { display: block; }
+
+.step-label {
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--cyan); margin-bottom: 6px; font-weight: 600;
+}
+.step-q { font-size: 1rem; font-weight: 700; color: var(--fg); margin-bottom: 4px; line-height: 1.35; }
+.step-hint { font-size: 0.78rem; color: var(--fg-3); margin-bottom: 16px; line-height: 1.5; }
+
+/* Options */
+.opt-list { display: flex; flex-direction: column; gap: 8px; }
+.opt {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px 14px;
+  cursor: pointer; transition: border-color 0.15s, background 0.15s;
+}
+.opt:hover { border-color: var(--border-2); }
+.opt.selected { border-color: var(--cyan); background: rgba(34,211,238,0.06); }
+.opt-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.opt-text { font-size: 0.85rem; color: var(--fg-2); line-height: 1.4; }
+.opt-text strong { color: var(--fg); font-weight: 600; display: block; margin-bottom: 1px; }
+.opt.selected .opt-text { color: var(--fg); }
+
+/* Text inputs (step 4 extras) */
+.extra-fields { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+.extra-field label { font-size: 11px; color: var(--fg-3); letter-spacing: 0.06em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.extra-field input, .extra-field select {
+  width: 100%; background: var(--surface-2); border: 1px solid var(--border-2);
+  border-radius: 7px; padding: 8px 12px; color: var(--fg);
+  font-size: 0.875rem; font-family: inherit; outline: none;
+  transition: border-color 0.15s;
+}
+.extra-field input:focus, .extra-field select:focus { border-color: var(--cyan); }
+.extra-field select option { background: var(--surface); }
+
+/* Nav buttons */
+.wiz-nav { display: flex; gap: 10px; margin-top: 20px; }
+.wiz-back {
+  background: var(--border); border: none; color: var(--fg-2);
+  border-radius: 8px; padding: 10px 18px; font-size: 0.875rem;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+}
+.wiz-back:hover { background: var(--border-2); }
+.wiz-next {
+  flex: 1; background: var(--cyan); border: none; color: #08111f;
+  border-radius: 8px; padding: 10px 18px; font-weight: 700;
+  font-size: 0.875rem; cursor: pointer; font-family: inherit;
+  transition: opacity 0.15s;
+}
+.wiz-next:disabled { opacity: 0.35; cursor: default; }
+.wiz-next:not(:disabled):hover { opacity: 0.85; }
+
+/* ── Result panel ── */
+.wiz-result { display: none; padding: 20px 22px 22px; }
+.wiz-result.active { display: block; }
+
+.result-match {
+  border-radius: 12px; overflow: hidden; margin-bottom: 16px;
+  border: 1px solid var(--border-2);
+}
+.result-match-header {
+  padding: 14px 16px;
+  display: flex; gap: 12px; align-items: center;
+}
+.result-match-icon { font-size: 28px; flex-shrink: 0; }
+.result-match-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 3px; }
+.result-match-name { font-weight: 700; font-size: 1.05rem; }
+.result-match-flow { font-size: 0.78rem; font-weight: 600; margin-top: 2px; }
+
+.result-rec {
+  background: var(--surface-2); border-radius: 12px; padding: 16px;
+  margin-bottom: 14px;
+}
+.result-rec-title {
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--fg-3); margin-bottom: 10px;
+}
+.result-rec-rows { display: flex; flex-direction: column; gap: 10px; }
+.result-rec-row {}
+.result-rec-row-label { font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 3px; }
+.result-rec-row-val { font-size: 0.8375rem; color: var(--fg); line-height: 1.5; }
+
+.result-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+
+.result-note {
+  background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2);
+  border-radius: 8px; padding: 10px 12px; font-size: 0.78rem;
+  color: var(--amber); line-height: 1.55; margin-bottom: 14px;
+}
+.result-note strong { font-weight: 700; }
+
+.result-actions { display: flex; gap: 10px; }
+.result-view-btn {
+  flex: 1; background: var(--cyan); border: none; color: #08111f;
+  border-radius: 8px; padding: 10px; font-weight: 700;
+  font-size: 0.875rem; cursor: pointer; font-family: inherit;
+  transition: opacity 0.15s;
+}
+.result-view-btn:hover { opacity: 0.85; }
+.result-restart-btn {
+  background: var(--border); border: none; color: var(--fg-2);
+  border-radius: 8px; padding: 10px 16px; font-size: 0.875rem;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+}
+.result-restart-btn:hover { background: var(--border-2); color: var(--fg); }
+
+/* Highlight on matched card */
+.card.wizard-match {
+  border-color: var(--cyan) !important;
+  box-shadow: 0 0 0 2px rgba(34,211,238,0.3), 0 8px 24px rgba(34,211,238,0.12) !important;
+}
+.card.wizard-match .card-accent { background: var(--cyan) !important; }
+
+/* ── Filters ── */
+.filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 24px; }
+.filter-btn {
+  font-size: 12px; padding: 5px 12px; border-radius: 999px;
+  border: 1px solid var(--border-2); background: var(--surface);
+  color: var(--fg-2); cursor: pointer; transition: all 0.15s; font-family: inherit;
+}
+.filter-btn:hover { border-color: var(--cyan); color: var(--fg); }
+.filter-btn.on { background: var(--cyan); color: #08111f; border-color: var(--cyan); font-weight: 600; }
+
+/* ── Grid ── */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; max-width: 1100px; margin: 0 auto; }
+
+/* ── Card ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden; cursor: pointer;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+.card:hover { transform: translateY(-3px); border-color: var(--cyan); box-shadow: 0 8px 24px rgba(34,211,238,0.08); }
+.card[data-hidden] { display: none; }
+.card-accent { height: 3px; }
+.card-body { padding: 16px; }
+.card-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+.card-icon { font-size: 26px; flex-shrink: 0; margin-top: 1px; }
+.card-name { font-weight: 700; font-size: 1rem; line-height: 1.25; color: var(--fg); }
+.card-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 3px; font-weight: 500; }
+.card-flow { font-size: 0.8rem; color: var(--cyan); font-weight: 600; margin-bottom: 12px; line-height: 1.45; }
+.card-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--fg-3); letter-spacing: 0.05em; text-transform: uppercase; }
+.card-toggle svg { transition: transform 0.2s; }
+.card.open .card-toggle svg { transform: rotate(180deg); }
+.card-detail { display: none; padding: 14px 16px 16px; border-top: 1px solid var(--border-2); background: rgba(255,255,255,0.02); }
+.card.open .card-detail { display: block; }
+.workflow-vis { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 14px; }
+.wf-step { display: flex; align-items: center; gap: 5px; background: var(--surface-2); border: 1px solid var(--border-2); padding: 5px 10px; border-radius: 8px; font-size: 11.5px; color: var(--fg-2); font-weight: 500; }
+.wf-icon { font-size: 14px; }
+.wf-arrow { color: var(--cyan); font-weight: 700; font-size: 14px; }
+.detail-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.detail-row-label { font-size: 9.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 3px; }
+.detail-row-value { font-size: 0.8125rem; color: var(--fg-2); line-height: 1.5; }
+.detail-row-value strong { color: var(--fg); font-weight: 600; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.pill { font-size: 11px; padding: 3px 10px; border-radius: 999px; background: var(--border); color: var(--fg-2); }
+.pill.cyan { background: rgba(34,211,238,0.15); color: var(--cyan); }
+.pill.green { background: rgba(74,222,128,0.15); color: var(--green); }
+.pill.amber { background: rgba(251,191,36,0.15); color: var(--amber); }
+.record-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 8px; margin-top: 4px; }
+.record-badge.single { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+.record-badge.multi { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
+
+/* ── Legend ── */
+.legend { max-width: 1100px; margin: 20px auto 0; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; }
+.legend-title { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-3); width: 100%; }
+.legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--fg-2); }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; }
+  .workflow-vis { gap: 4px; }
+  .wizard-bar { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card, .card-toggle svg, .wiz-progress-fill { transition: none; }
+}
+</style>
+
+<!-- ══ PAGE ══ -->
+<div class="header">
+  <h1>📚 NYU Resource Lifecycle &amp; Cataloging Paths</h1>
+  <p>Publication Type → Acquisition → Ordering → NYU Treatment → Catalog Record Outcome</p>
+</div>
+
+<div class="hub">
+  <div class="hub-center">Knowledge Resources Hub · KARMS / OTA · 2024–</div>
+</div>
+
+<!-- Wizard launch bar -->
+<div class="wizard-bar">
+  <div class="wizard-bar-text">
+    <div class="wizard-bar-title">🧭 Not sure which resource type applies?</div>
+    <div class="wizard-bar-sub">Answer 5 quick questions to get a cataloging treatment &amp; acquisitions recommendation.</div>
+  </div>
+  <button class="wizard-launch-btn" id="launchWizard">Start Questionnaire →</button>
+</div>
+
+<!-- Filters -->
+<div class="filters">
+  <button class="filter-btn on" data-f="all">All types</button>
+  <button class="filter-btn" data-f="firm">Firm order</button>
+  <button class="filter-btn" data-f="standing">Standing order</button>
+  <button class="filter-btn" data-f="subscription">Subscription</button>
+  <button class="filter-btn" data-f="single">Single record</button>
+  <button class="filter-btn" data-f="multi">Multi record</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="legend">
+  <div class="legend-title">Record model</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>Single record model</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>Multiple record model</div>
+  <div class="legend-item" style="margin-left:auto;font-size:11px;color:var(--fg-3)">Click any card to expand</div>
+</div>
+
+<!-- ══ WIZARD OVERLAY ══ -->
+<div class="wizard-overlay" id="wizOverlay">
+  <div class="wizard-panel" id="wizPanel">
+
+    <div class="wiz-header">
+      <div class="wiz-header-left">
+        <div class="wiz-title">Acquisitions &amp; Cataloging Classifier</div>
+        <div class="wiz-subtitle" id="wizSubtitle">Step 1 of 5</div>
+      </div>
+      <button class="wiz-close" id="wizClose">✕</button>
+    </div>
+
+    <div class="wiz-progress">
+      <div class="wiz-progress-bar"><div class="wiz-progress-fill" id="wizFill" style="width:20%"></div></div>
+      <div class="wiz-progress-label" id="wizProgLabel">Step 1 — Material format</div>
+    </div>
+
+    <!-- Step 1: Format -->
+    <div class="wiz-step active" id="step1">
+      <div class="step-label">Step 1 · Material Format</div>
+      <div class="step-q">What type of material are you requesting?</div>
+      <div class="step-hint">Identifies the physical format — does not determine order type on its own.</div>
+      <div class="opt-list" id="s1opts">
+        <div class="opt" data-val="book"><span class="opt-icon">📘</span><span class="opt-text"><strong>Book</strong>Print monograph, academic text, or reference work</span></div>
+        <div class="opt" data-val="periodical"><span class="opt-icon">📰</span><span class="opt-text"><strong>Periodical</strong>Journal, magazine, newspaper, annual</span></div>
+        <div class="opt" data-val="score"><span class="opt-icon">🎵</span><span class="opt-text"><strong>Music score</strong>Printed sheet music or score collection</span></div>
+        <div class="opt" data-val="audio"><span class="opt-icon">💿</span><span class="opt-text"><strong>CD or audio recording</strong>Physical disc or digital audio</span></div>
+        <div class="opt" data-val="video"><span class="opt-icon">📀</span><span class="opt-text"><strong>DVD or video recording</strong>Physical disc or streaming license</span></div>
+        <div class="opt" data-val="brochure"><span class="opt-icon">📄</span><span class="opt-text"><strong>Brochure or pamphlet</strong>Brief standalone publication</span></div>
+        <div class="opt" data-val="other"><span class="opt-icon">📦</span><span class="opt-text"><strong>Other</strong>Database, website, looseleaf, or unclear format</span></div>
+      </div>
+      <div class="wiz-nav">
+        <button class="wiz-next" id="next1" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Issuance -->
+    <div class="wiz-step" id="step2">
+      <div class="step-label">Step 2 · Publication Issuance</div>
+      <div class="step-q">Which description best matches the publication?</div>
+      <div class="step-hint">This is the first major classification point — determines the resource type category.</div>
+      <div class="opt-list" id="s2opts">
+        <div class="opt" data-val="single"><span class="opt-icon">📘</span><span class="opt-text"><strong>Single publication</strong>Can be purchased once and is complete</span></div>
+        <div class="opt" data-val="periodically"><span class="opt-icon">📅</span><span class="opt-text"><strong>Issued periodically</strong>Monthly, quarterly, or annually with numbering/dates</span></div>
+        <div class="opt" data-val="multipart"><span class="opt-icon">📦</span><span class="opt-text"><strong>Multiple parts or volumes</strong>Parts together form a complete, finite work</span></div>
+        <div class="opt" data-val="series"><span class="opt-icon">📚</span><span class="opt-text"><strong>Series of separate publications</strong>May continue indefinitely under a common title</span></div>
+        <div class="opt" data-val="updating"><span class="opt-icon">🔄</span><span class="opt-text"><strong>Continuously updated resource</strong>Database, website, or looseleaf — no issue numbering</span></div>
+        <div class="opt" data-val="unsure"><span class="opt-icon">❓</span><span class="opt-text"><strong>Not sure</strong>Need more guidance</span></div>
+      </div>
+      <div class="wiz-nav">
+        <button class="wiz-back" id="back2">← Back</button>
+        <button class="wiz-next" id="next2" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Purchase intent -->
+    <div class="wiz-step" id="step3">
+      <div class="step-label">Step 3 · Purchasing Intention</div>
+      <div class="step-q">What is the purchasing intention?</div>
+      <div class="step-hint">Distinguishes a new order from a renewal, replacement, or standing-order arrangement.</div>
+      <div class="opt-list" id="s3opts">
+        <div class="opt" data-val="firm"><span class="opt-icon">🛒</span><span class="opt-text"><strong>Purchase a single item or edition</strong>One-time firm order</span></div>
+        <div class="opt" data-val="subscribe"><span class="opt-icon">📬</span><span class="opt-text"><strong>Subscribe to receive future issues</strong>New subscription</span></div>
+        <div class="opt" data-val="finite-multi"><span class="opt-icon">📦</span><span class="opt-text"><strong>Purchase multiple volumes of a finite work</strong>Complete set or partial set</span></div>
+        <div class="opt" data-val="standing"><span class="opt-icon">🔁</span><span class="opt-text"><strong>Establish a standing order</strong>Auto-receive future volumes or publications</span></div>
+        <div class="opt" data-val="back"><span class="opt-icon">📂</span><span class="opt-text"><strong>Back issue or previously published volume</strong>Retrospective purchase</span></div>
+        <div class="opt" data-val="renew"><span class="opt-icon">♻️</span><span class="opt-text"><strong>Renew an existing subscription</strong>Continuation of current subscription</span></div>
+        <div class="opt" data-val="replace"><span class="opt-icon">🔄</span><span class="opt-text"><strong>Replace a lost or damaged item</strong>Replacement copy</span></div>
+        <div class="opt" data-val="unsure3"><span class="opt-icon">❓</span><span class="opt-text"><strong>Not sure</strong></span></div>
+      </div>
+      <div class="wiz-nav">
+        <button class="wiz-back" id="back3">← Back</button>
+        <button class="wiz-next" id="next3" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Volumes (conditional) -->
+    <div class="wiz-step" id="step4">
+      <div class="step-label">Step 4 · Volume &amp; Parts</div>
+      <div class="step-q">How many volumes or parts are expected?</div>
+      <div class="step-hint">Helps determine whether this is a finite multipart set or an open-ended continuing resource.</div>
+      <div class="opt-list" id="s4opts">
+        <div class="opt" data-val="one"><span class="opt-icon">1️⃣</span><span class="opt-text"><strong>One volume</strong>Complete in a single volume</span></div>
+        <div class="opt" data-val="finite"><span class="opt-icon">🔢</span><span class="opt-text"><strong>Known, finite number of volumes</strong>Set will be complete when all are received</span></div>
+        <div class="opt" data-val="unknown"><span class="opt-icon">♾️</span><span class="opt-text"><strong>Unknown number of future volumes</strong>Open-ended continuation expected</span></div>
+        <div class="opt" data-val="indefinite"><span class="opt-icon">🔁</span><span class="opt-text"><strong>Continues indefinitely</strong>No planned conclusion</span></div>
+        <div class="opt" data-val="unsure4"><span class="opt-icon">❓</span><span class="opt-text"><strong>Not sure</strong></span></div>
+      </div>
+      <div class="extra-fields">
+        <div class="extra-field"><label>Total volumes expected</label><input type="number" id="totalVols" placeholder="e.g. 8" min="1"></div>
+        <div class="extra-field"><label>Volumes being purchased now</label><input type="number" id="volsNow" placeholder="e.g. 3" min="1"></div>
+        <div class="extra-field"><label>Volume or part numbers</label><input type="text" id="volNums" placeholder="e.g. v.1-3 or v.5"></div>
+        <div class="extra-field">
+          <label>Is the request for the complete set?</label>
+          <select id="completeSet">
+            <option value="">— select —</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+            <option value="unsure">Unsure</option>
+          </select>
+        </div>
+      </div>
+      <div class="wiz-nav">
+        <button class="wiz-back" id="back4">← Back</button>
+        <button class="wiz-next" id="next4" disabled>Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Purpose -->
+    <div class="wiz-step" id="step5">
+      <div class="step-label">Step 5 · Request Purpose</div>
+      <div class="step-q">What is the purpose of this request?</div>
+      <div class="step-hint">Helps identify when a classification may require a different purchasing procedure.</div>
+      <div class="opt-list" id="s5opts">
+        <div class="opt" data-val="new"><span class="opt-icon">🆕</span><span class="opt-text"><strong>New title or resource</strong>Not currently held by NYU Libraries</span></div>
+        <div class="opt" data-val="missing"><span class="opt-icon">🔍</span><span class="opt-text"><strong>Missing volume of an existing title</strong>We hold the title but are missing a specific volume</span></div>
+        <div class="opt" data-val="additional"><span class="opt-icon">➕</span><span class="opt-text"><strong>Additional volume or part of existing multipart work</strong>Continuation of a work already in the collection</span></div>
+        <div class="opt" data-val="new-sub"><span class="opt-icon">📬</span><span class="opt-text"><strong>New subscription</strong>Starting a new serial or periodical subscription</span></div>
+        <div class="opt" data-val="back-vol"><span class="opt-icon">📂</span><span class="opt-text"><strong>Back issue or back volume</strong>Previously published issue we do not hold</span></div>
+        <div class="opt" data-val="replacement"><span class="opt-icon">🔄</span><span class="opt-text"><strong>Replacement</strong>Lost, damaged, or withdrawn copy</span></div>
+        <div class="opt" data-val="other5"><span class="opt-icon">📝</span><span class="opt-text"><strong>Other</strong>Course reserve, gift, donation, or special request</span></div>
+      </div>
+      <div class="wiz-nav">
+        <button class="wiz-back" id="back5">← Back</button>
+        <button class="wiz-next" id="next5" disabled>Get Recommendation →</button>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="wiz-result" id="wizResult">
+      <div class="step-label" style="margin-bottom:10px">✅ Recommendation</div>
+      <div id="resultContent"></div>
+      <div class="result-actions" style="margin-top:4px">
+        <button class="result-view-btn" id="viewCardBtn">View resource type card ↓</button>
+        <button class="result-restart-btn" id="restartBtn">Start over</button>
+      </div>
+    </div>
+
+  </div><!-- /wizard-panel -->
+</div><!-- /wizard-overlay -->
+
+<script>
+/* ════════════════════════════════
+   RESOURCE TYPE DATA
+═══════════════════════════════ */
+const DATA = [
+  {
+    id: "monograph",
+    icon: "📘", label: "Monograph", name: "Monograph",
+    accentColor: "#06b6d4", tags: ["firm","single"],
+    flow: "Standalone Work → Vendor Purchase → Single Record",
+    workflow: [
+      {icon:"📘",text:"Standalone work"},{icon:"🛒",text:"Vendor system"},
+      {icon:"📄",text:"One bib record"},{icon:"✅",text:"Complete"},
+    ],
+    rows: [
+      {label:"Definition",value:"A standalone work complete in one part."},
+      {label:"Publication Pattern",value:"Published <strong>once</strong> or in limited editions."},
+      {label:"Intended End",value:"<strong>Immediate</strong> — complete as published."},
+      {label:"NYU Treatment (2024–)",value:"Monographic — Firm. One OTA POL per title."},
+    ],
+    pills: [{text:"Firm Order (Mono)",cls:"cyan"},{text:"OTA POL",cls:""}],
+    record: {text:"1 Record per title",cls:"single"},
+    example:"e.g. García Márquez, Cien años de soledad — single volume, one POL.",
+  },
+  {
+    id: "multipart-un",
+    icon: "📦", label: "Multipart Monograph", name: "Multipart Monograph (Unanalyzed)",
+    accentColor: "#f59e0b", tags: ["single"],
+    flow: "Many Parts → Catalog Together → One Record",
+    workflow: [
+      {icon:"📦",text:"Part 1"},{icon:"📦",text:"Part 2…N"},
+      {icon:"🔗",text:"Classed together"},{icon:"📄",text:"One record"},
+    ],
+    rows: [
+      {label:"Definition",value:"Multiple parts not individually standalone — no independent monographic identity."},
+      {label:"Publication Pattern",value:"Issued in parts with enumeration; <strong>predetermined completion</strong>."},
+      {label:"NYU Treatment (2024–)",value:"<strong>Unanalyzed · Classed Together.</strong> One record for the entire set."},
+      {label:"Order Type",value:"N/A — case-by-case."},
+    ],
+    pills: [{text:"Unanalyzed",cls:""},{text:"Classed Together",cls:""}],
+    record: {text:"1 Record for Entire Set",cls:"single"},
+    example:"e.g. Collected Works of X, vols. 1–8 — all classed together under one record.",
+  },
+  {
+    id: "multipart-an",
+    icon: "🗂️", label: "Multipart Monograph", name: "Multipart Monograph (Analyzed)",
+    accentColor: "#10b981", tags: ["standing","multi"],
+    flow: "Parts with Distinct Titles → Separate Records + Call #s",
+    workflow: [
+      {icon:"📦",text:"Vol. 1 → Record 1"},
+      {icon:"📦",text:"Vol. 2 → Record 2"},
+      {icon:"📦",text:"Vol. 3 → Record 3"},
+    ],
+    rows: [
+      {label:"Definition",value:"Multiple parts each with its own distinctive standalone monographic title."},
+      {label:"Publication Pattern",value:"Issued in parts; <strong>predetermined completion</strong>; each part independently meaningful."},
+      {label:"NYU Treatment (2024–)",value:"<strong>Analyzed · Classed Separately.</strong> Separate bib record + call number per part."},
+    ],
+    pills: [{text:"Standing Order Mono",cls:"cyan"},{text:"Vendor Purchase",cls:""}],
+    record: {text:"Multiple Records",cls:"multi"},
+    example:"e.g. Feynman Lectures on Physics, Vol. 1 / 2 / 3 — each a separate record.",
+  },
+  {
+    id: "mono-series",
+    icon: "📖", label: "Monographic Series", name: "Monographic Series",
+    accentColor: "#8b5cf6", tags: ["standing","multi"],
+    flow: "Series → Successive Volumes → Separate Records",
+    workflow: [
+      {icon:"📖",text:"Series title"},{icon:"➕",text:"New volume"},
+      {icon:"📄",text:"New record"},{icon:"🔁",text:"Continues…"},
+    ],
+    rows: [
+      {label:"Definition",value:"A succession of monographs sharing a common series title — each volume a full monograph in its own right."},
+      {label:"Publication Pattern",value:"Issued successively; <strong>usually indefinite continuation</strong>."},
+      {label:"NYU Treatment (2024–)",value:"<strong>Analyzed · Classed Separately.</strong> Separate record + call number per volume."},
+    ],
+    pills: [{text:"Standing Order Mono",cls:"cyan"}],
+    record: {text:"Multiple Records",cls:"multi"},
+    example:"e.g. Lecture Notes in Mathematics (Springer) — each numbered volume fully cataloged.",
+  },
+  {
+    id: "mono-series-p",
+    icon: "📑", label: "Monographic Series", name: "Monographic Series (Partially Analyzable)",
+    accentColor: "#ec4899", tags: ["subscription","single"],
+    flow: "Mixed Volumes → Class Together → One Series Record",
+    workflow: [
+      {icon:"📚",text:"Mixed parts"},{icon:"📑",text:"Series identity"},
+      {icon:"📄",text:"Single series record"},
+    ],
+    rows: [
+      {label:"Definition",value:"Only some parts carry strong monographic titles; the rest are generic numbered entries."},
+      {label:"Publication Pattern",value:"Issued successively; <strong>mixed title strength</strong> across parts; indefinite."},
+      {label:"NYU Treatment (2024–)",value:"<strong>Unanalyzed · Classed Together.</strong> Single series record for the whole."},
+    ],
+    pills: [{text:"Subscription POL",cls:"cyan"},{text:"Vendor Purchase",cls:""}],
+    record: {text:"1 Series Record",cls:"single"},
+    example:"e.g. A series with some distinct scholarly titles but mostly numbered volumes.",
+  },
+  {
+    id: "serial",
+    icon: "📰", label: "Serials & Periodicals", name: "Serials & Periodicals",
+    accentColor: "#38bdf8", tags: ["subscription","single"],
+    flow: "Issues Over Time → One Serial Record",
+    workflow: [
+      {icon:"📰",text:"Issue 1"},{icon:"📰",text:"Issue 2…"},
+      {icon:"📄",text:"Serial record"},{icon:"🔁",text:"Indefinite"},
+    ],
+    rows: [
+      {label:"Definition",value:"A continuing resource with successive parts distinguished by numbering and dates — journals, magazines, annuals, newspapers."},
+      {label:"Publication Pattern",value:"Successive parts with <strong>numbering and dates</strong>; usually indefinite."},
+      {label:"NYU Treatment (2024–)",value:"<strong>Unanalyzed · Classed Together.</strong> One serial record per title; check-in at holdings level."},
+    ],
+    pills: [{text:"Subscription",cls:"cyan"}],
+    record: {text:"1 Serial Record per Title",cls:"single"},
+    example:"e.g. The American Historical Review — one serial record; issues checked in under a single bib.",
+  },
+  {
+    id: "integrating",
+    icon: "🌐", label: "Integrating Resource", name: "Integrating Resource",
+    accentColor: "#84cc16", tags: ["single"],
+    flow: "Update Content → Same Record Persists",
+    workflow: [
+      {icon:"🌐",text:"Resource"},{icon:"🔄",text:"Update"},
+      {icon:"🔄",text:"Update…"},{icon:"📄",text:"Same IR record"},
+    ],
+    rows: [
+      {label:"Definition",value:"Updates integrated directly into the existing work — databases, updating websites, looseleaf publications."},
+      {label:"Publication Pattern",value:"<strong>No issue numbering</strong> — updates replace or add integrated content; indefinite."},
+      {label:"NYU Treatment (2024–)",value:"<strong>Unanalyzed · Classed Together.</strong> Single IR record for all iterations. Access managed at license level."},
+      {label:"Order Type",value:"N/A — no per-update POL."},
+    ],
+    pills: [{text:"No Issue Numbering",cls:""},{text:"License-managed",cls:""}],
+    record: {text:"1 IR Record Across Iterations",cls:"single"},
+    example:"e.g. An updating legal looseleaf service or continuously revised online database.",
+  },
+];
+
+/* ════════════════════════════════
+   BUILD CARDS
+═══════════════════════════════ */
+function buildCard(d) {
+  const div = document.createElement('div');
+  div.className = 'card'; div.id = 'card-' + d.id;
+  div.dataset.tags = d.tags.join(' ');
+  const wfSteps = d.workflow.map((s,i) =>
+    `<div class="wf-step"><span class="wf-icon">${s.icon}</span>${s.text}</div>${i<d.workflow.length-1?'<span class="wf-arrow">→</span>':''}`
+  ).join('');
+  div.innerHTML = `
+    <div class="card-accent" style="background:${d.accentColor}"></div>
+    <div class="card-body">
+      <div class="card-head">
+        <div class="card-icon">${d.icon}</div>
+        <div><div class="card-label">${d.label}</div><div class="card-name">${d.name}</div></div>
+      </div>
+      <div class="card-flow">${d.flow}</div>
+      <div class="card-toggle">Details
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4l4 4 4-4"/></svg>
+      </div>
+    </div>
+    <div class="card-detail">
+      <div class="workflow-vis">${wfSteps}</div>
+      <div class="detail-rows">${d.rows.map(r=>`<div class="detail-row"><div class="detail-row-label">${r.label}</div><div class="detail-row-value">${r.value}</div></div>`).join('')}</div>
+      <div class="pills">${d.pills.map(p=>`<span class="pill ${p.cls}">${p.text}</span>`).join('')}</div>
+      <div class="record-badge ${d.record.cls}">${d.record.cls==='single'?'📄':'📚'} ${d.record.text}</div>
+      <div style="margin-top:10px;font-size:11px;color:var(--fg-3);font-style:italic;line-height:1.5">${d.example}</div>
+    </div>`;
+  div.addEventListener('click', () => div.classList.toggle('open'));
+  return div;
+}
+
+const grid = document.getElementById('grid');
+DATA.forEach(d => grid.appendChild(buildCard(d)));
+
+/* ════════════════════════════════
+   FILTER
+═══════════════════════════════ */
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    const f = btn.dataset.f;
+    document.querySelectorAll('.card').forEach(card => {
+      if (f === 'all' || (card.dataset.tags||'').includes(f)) delete card.dataset.hidden;
+      else card.dataset.hidden = '1';
+    });
+  });
+});
+
+/* ════════════════════════════════
+   WIZARD
+═══════════════════════════════ */
+const overlay = document.getElementById('wizOverlay');
+const steps = [1,2,3,4,5];
+let stepHistory = [1];
+const answers = {};
+
+document.getElementById('launchWizard').addEventListener('click', openWizard);
+document.getElementById('wizClose').addEventListener('click', closeWizard);
+overlay.addEventListener('click', e => { if (e.target === overlay) closeWizard(); });
+
+function openWizard() {
+  overlay.classList.add('visible');
+  resetWizard();
+}
+function closeWizard() {
+  overlay.classList.remove('visible');
+  // remove match highlight
+  document.querySelectorAll('.card.wizard-match').forEach(c => c.classList.remove('wizard-match'));
+}
+
+function resetWizard() {
+  Object.keys(answers).forEach(k => delete answers[k]);
+  stepHistory = [1];
+  showStep(1);
+  document.getElementById('wizResult').classList.remove('active');
+  [1,2,3,4,5].forEach(n => {
+    const s = document.getElementById('step'+n);
+    if (s) { s.classList.remove('active'); s.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected')); }
+    const nb = document.getElementById('next'+n); if (nb) nb.disabled = true;
+  });
+  document.getElementById('step1').classList.add('active');
+  updateProgress(1);
+}
+
+function showStep(n) {
+  [1,2,3,4,5].forEach(i => {
+    const s = document.getElementById('step'+i); if (s) s.classList.remove('active');
+  });
+  document.getElementById('wizResult').classList.remove('active');
+  const s = document.getElementById('step'+n); if (s) s.classList.add('active');
+  updateProgress(n);
+}
+
+function updateProgress(n) {
+  const total = 5;
+  const pct = Math.round((n / total) * 100);
+  document.getElementById('wizFill').style.width = pct + '%';
+  const labels = ['','Material format','Publication issuance','Purchasing intention','Volumes & parts','Request purpose'];
+  document.getElementById('wizProgLabel').textContent = `Step ${n} — ${labels[n]||''}`;
+  document.getElementById('wizSubtitle').textContent = `Step ${n} of ${total}`;
+}
+
+// Generic option selector
+function setupOpts(stepId, answerKey, nextBtnId) {
+  const container = document.getElementById(stepId);
+  const nextBtn = document.getElementById(nextBtnId);
+  container.querySelectorAll('.opt').forEach(opt => {
+    opt.addEventListener('click', () => {
+      container.querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      answers[answerKey] = opt.dataset.val;
+      nextBtn.disabled = false;
+    });
+  });
+}
+setupOpts('s1opts','format','next1');
+setupOpts('s2opts','issuance','next2');
+setupOpts('s3opts','intent','next3');
+setupOpts('s4opts','volumes','next4');
+setupOpts('s5opts','purpose','next5');
+
+// Step navigation
+document.getElementById('next1').addEventListener('click', () => {
+  stepHistory.push(2); showStep(2);
+});
+document.getElementById('back2').addEventListener('click', () => {
+  stepHistory.pop(); showStep(stepHistory[stepHistory.length-1]);
+});
+document.getElementById('next2').addEventListener('click', () => {
+  // Skip step 4 for certain clear-cut paths
+  const iss = answers.issuance;
+  if (iss === 'single' || iss === 'periodically' || iss === 'updating') {
+    stepHistory.push(3); showStep(3);
+  } else {
+    stepHistory.push(3); showStep(3);
+  }
+});
+document.getElementById('back3').addEventListener('click', () => {
+  stepHistory.pop(); showStep(stepHistory[stepHistory.length-1]);
+});
+document.getElementById('next3').addEventListener('click', () => {
+  const iss = answers.issuance;
+  // Show step 4 for multipart/series or uncertain
+  if (['multipart','series','unsure'].includes(iss) || ['finite-multi','standing','unsure3'].includes(answers.intent)) {
+    stepHistory.push(4); showStep(4);
+  } else {
+    stepHistory.push(5); showStep(5);
+    // Enable next5 after skipping step 4
+  }
+});
+// Step 4 opt enables next button
+document.getElementById('s4opts').querySelectorAll('.opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.getElementById('next4').disabled = false;
+  });
+});
+document.getElementById('back4').addEventListener('click', () => {
+  stepHistory.pop(); showStep(stepHistory[stepHistory.length-1]);
+});
+document.getElementById('next4').addEventListener('click', () => {
+  answers.totalVols = document.getElementById('totalVols').value;
+  answers.volsNow = document.getElementById('volsNow').value;
+  answers.volNums = document.getElementById('volNums').value;
+  answers.completeSet = document.getElementById('completeSet').value;
+  stepHistory.push(5); showStep(5);
+});
+document.getElementById('back5').addEventListener('click', () => {
+  stepHistory.pop(); showStep(stepHistory[stepHistory.length-1]);
+});
+document.getElementById('next5').addEventListener('click', () => {
+  showResult();
+});
+document.getElementById('restartBtn').addEventListener('click', resetWizard);
+
+/* ════════════════════════════════
+   CLASSIFICATION LOGIC
+═══════════════════════════════ */
+function classify(a) {
+  const {format, issuance, intent, volumes, purpose} = a;
+
+  // Integrating resource
+  if (issuance === 'updating' || format === 'other') {
+    return {
+      typeId: 'integrating',
+      treatment: 'Unanalyzed · Classed Together',
+      orderType: 'N/A — license-managed',
+      acqMethod: 'License or vendor agreement (no per-update POL)',
+      recordModel: '1 IR record for all iterations',
+      confidence: 'high',
+      note: null,
+      procedureNote: purpose === 'replacement'
+        ? '⚠ Replacement: verify existing IR record in Alma before creating a new one.'
+        : null,
+    };
+  }
+
+  // Serial / periodical
+  if (issuance === 'periodically' || intent === 'subscribe' || intent === 'renew' || purpose === 'new-sub') {
+    return {
+      typeId: 'serial',
+      treatment: 'Unanalyzed · Classed Together',
+      orderType: 'Subscription',
+      acqMethod: 'Vendor system or direct subscription',
+      recordModel: '1 serial record per title',
+      confidence: 'high',
+      note: intent === 'renew' ? 'This is a renewal — locate the existing subscription POL in Alma rather than creating a new one.' : null,
+      procedureNote: purpose === 'back-vol' ? '⚠ Back issue: treat as a one-time firm purchase against the existing serial record.' : null,
+    };
+  }
+
+  // Single / firm order
+  if (issuance === 'single' || intent === 'firm' || volumes === 'one') {
+    // Scores and AV are still monographs
+    const typeNote = format === 'score' ? 'Music scores are cataloged as monographs.' :
+                     format === 'audio' ? 'Audio recordings (CDs) are cataloged as monographs.' :
+                     format === 'video' ? 'DVDs are cataloged as monographs (unless part of a set).' : null;
+    return {
+      typeId: 'monograph',
+      treatment: 'Monographic — Firm',
+      orderType: 'Firm Order (Mono)',
+      acqMethod: 'Purchase at vendor system — one OTA POL per title',
+      recordModel: '1 monograph record per title',
+      confidence: 'high',
+      note: typeNote,
+      procedureNote: purpose === 'replacement'
+        ? '⚠ Replacement: use a replacement order type in Alma. Verify the existing holdings record first.'
+        : purpose === 'missing'
+        ? '⚠ Missing volume: check if a standing order is already active before placing a firm order.'
+        : purpose === 'back-vol'
+        ? '⚠ Back volume: use a firm order against the existing monograph or serial record as appropriate.'
+        : null,
+    };
+  }
+
+  // Multipart / series — need volumes answer to differentiate
+  if (issuance === 'multipart' || issuance === 'series') {
+    const finite = volumes === 'one' || volumes === 'finite';
+    const indefinite = volumes === 'unknown' || volumes === 'indefinite';
+
+    if (issuance === 'multipart') {
+      if (intent === 'standing' || indefinite) {
+        // Analyzed multipart on standing order
+        return {
+          typeId: 'multipart-an',
+          treatment: 'Analyzed · Classed Separately',
+          orderType: 'Standing Order — Mono',
+          acqMethod: 'Purchase at vendor system; separate record per part',
+          recordModel: 'Multiple monograph records — one per part',
+          confidence: 'high',
+          note: 'Each part carries a distinctive monographic title and receives its own bib record and call number.',
+          procedureNote: purpose === 'additional' ? '⚠ Additional volume: verify the existing standing order POL in Alma before ordering.' : null,
+        };
+      } else {
+        // Unanalyzed — parts do not stand alone, or finite set
+        return {
+          typeId: 'multipart-un',
+          treatment: 'Unanalyzed · Classed Together',
+          orderType: 'N/A — case-by-case',
+          acqMethod: 'Verify with supervisor; parts are not individually ordered',
+          recordModel: '1 record for the entire set',
+          confidence: 'medium',
+          note: 'Confirm whether parts have individual monographic titles. If they do, reclassify as Multipart Monograph (Analyzed).',
+          procedureNote: null,
+        };
+      }
+    }
+
+    if (issuance === 'series') {
+      if (intent === 'subscribe' || intent === 'renew') {
+        // Partially analyzable — subscription POL
+        return {
+          typeId: 'mono-series-p',
+          treatment: 'Unanalyzed · Classed Together',
+          orderType: 'Subscription POL',
+          acqMethod: 'Purchase at vendor system under subscription arrangement',
+          recordModel: '1 series record for the whole',
+          confidence: 'medium',
+          note: 'Used when only some volumes have strong monographic titles. If all volumes have distinct titles, consider reclassifying as Monographic Series (Analyzed).',
+          procedureNote: intent === 'renew' ? '⚠ Renewal: locate and renew the existing subscription POL in Alma.' : null,
+        };
+      } else {
+        // Full monographic series on standing order
+        return {
+          typeId: 'mono-series',
+          treatment: 'Analyzed · Classed Separately',
+          orderType: 'Standing Order — Mono',
+          acqMethod: 'Purchase at vendor system; separate record per volume',
+          recordModel: 'Multiple records — one per volume',
+          confidence: 'high',
+          note: 'Each volume is a full monograph in its own right. Standing order auto-receives new volumes.',
+          procedureNote: purpose === 'additional' ? '⚠ Additional volume: confirm the standing order is active before placing a separate firm order.' : null,
+        };
+      }
+    }
+  }
+
+  // Uncertain / unsure paths — best guess
+  if (issuance === 'unsure') {
+    return {
+      typeId: 'monograph',
+      treatment: 'Monographic — Firm (best guess)',
+      orderType: 'Firm Order (Mono)',
+      acqMethod: 'Purchase at vendor system',
+      recordModel: '1 monograph record per title',
+      confidence: 'low',
+      note: 'Based on limited information, a monograph firm order is the most common scenario. Please verify the publication type with the vendor or a cataloger before proceeding.',
+      procedureNote: null,
+    };
+  }
+
+  // Fallback
+  return {
+    typeId: 'monograph',
+    treatment: 'Monographic — Firm',
+    orderType: 'Firm Order (Mono)',
+    acqMethod: 'Purchase at vendor system',
+    recordModel: '1 monograph record per title',
+    confidence: 'low',
+    note: 'Defaulting to monograph — please verify with your supervisor.',
+    procedureNote: null,
+  };
+}
+
+const CONFIDENCE_COLORS = {
+  high: { bg: 'rgba(74,222,128,0.1)', border: 'rgba(74,222,128,0.25)', color: 'var(--green)', label: '✅ High confidence' },
+  medium: { bg: 'rgba(251,191,36,0.08)', border: 'rgba(251,191,36,0.2)', color: 'var(--amber)', label: '⚠ Medium confidence — verify' },
+  low: { bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.2)', color: 'var(--red)', label: '🔎 Low confidence — consult supervisor' },
+};
+
+function showResult() {
+  const rec = classify(answers);
+  const type = DATA.find(d => d.id === rec.typeId);
+  const conf = CONFIDENCE_COLORS[rec.confidence];
+
+  // Highlight the matching card
+  document.querySelectorAll('.card.wizard-match').forEach(c => c.classList.remove('wizard-match'));
+  const matchCard = document.getElementById('card-' + rec.typeId);
+  if (matchCard) matchCard.classList.add('wizard-match');
+
+  // Build result HTML
+  const noteHtml = rec.note ? `
+    <div class="result-note" style="background:rgba(34,211,238,0.07);border-color:rgba(34,211,238,0.2);color:var(--fg-2)">
+      <strong>📋 Note:</strong> ${rec.note}
+    </div>` : '';
+  const procNoteHtml = rec.procedureNote ? `<div class="result-note">${rec.procedureNote}</div>` : '';
+
+  document.getElementById('resultContent').innerHTML = `
+    <div class="result-match" style="border-color:${type.accentColor}40">
+      <div class="result-match-header" style="background:${type.accentColor}15">
+        <div class="result-match-icon">${type.icon}</div>
+        <div>
+          <div class="result-match-label">${type.label}</div>
+          <div class="result-match-name" style="color:${type.accentColor}">${type.name}</div>
+          <div class="result-match-flow" style="color:var(--fg-3)">${type.flow}</div>
+        </div>
+      </div>
+    </div>
+    <div class="result-rec">
+      <div class="result-rec-title">Recommended treatment</div>
+      <div class="result-rec-rows">
+        <div class="result-rec-row">
+          <div class="result-rec-row-label">Cataloging Treatment</div>
+          <div class="result-rec-row-val"><strong>${rec.treatment}</strong></div>
+        </div>
+        <div class="result-rec-row">
+          <div class="result-rec-row-label">Order Type</div>
+          <div class="result-rec-row-val">${rec.orderType}</div>
+        </div>
+        <div class="result-rec-row">
+          <div class="result-rec-row-label">Acquisitions Method</div>
+          <div class="result-rec-row-val">${rec.acqMethod}</div>
+        </div>
+        <div class="result-rec-row">
+          <div class="result-rec-row-label">Record Model</div>
+          <div class="result-rec-row-val">${rec.recordModel}</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;padding:6px 12px;border-radius:8px;margin-bottom:12px;background:${conf.bg};border:1px solid ${conf.border};color:${conf.color}">
+      ${conf.label}
+    </div>
+    ${noteHtml}${procNoteHtml}`;
+
+  // Show result panel
+  [1,2,3,4,5].forEach(n => { const s = document.getElementById('step'+n); if(s) s.classList.remove('active'); });
+  document.getElementById('wizResult').classList.add('active');
+  document.getElementById('wizFill').style.width = '100%';
+  document.getElementById('wizSubtitle').textContent = 'Complete';
+  document.getElementById('wizProgLabel').textContent = 'Recommendation ready';
+}
+
+// View card button
+document.getElementById('viewCardBtn').addEventListener('click', () => {
+  closeWizard();
+  const matchCard = document.querySelector('.card.wizard-match');
+  if (matchCard) {
+    matchCard.classList.add('open');
+    setTimeout(() => {
+      matchCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }
+  // Reset filter to all so the card is visible
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  document.querySelector('[data-f="all"]').classList.add('on');
+  document.querySelectorAll('.card').forEach(card => delete card.dataset.hidden);
+});
+</script>
+
+</body></html>
